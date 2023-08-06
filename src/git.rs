@@ -1,9 +1,7 @@
-use crate::{fmt_option_str, write_variable};
+use crate::git_shared::RepoInfo;
 use std::{fs, io, path};
 
-pub fn write_git_version(manifest_location: &path::Path, mut w: &fs::File) -> io::Result<()> {
-    use io::Write;
-
+pub fn write_git_version(manifest_location: &path::Path, w: &fs::File) -> io::Result<()> {
     // CIs will do shallow clones of repositories, causing libgit2 to error
     // out. We try to detect if we are running on a CI and ignore the
     // error.
@@ -11,61 +9,21 @@ pub fn write_git_version(manifest_location: &path::Path, mut w: &fs::File) -> io
         Ok(Some((tag, dirty))) => (Some(tag), Some(dirty)),
         _ => (None, None),
     };
-    write_variable!(
-        w,
-        "GIT_VERSION",
-        "Option<&str>",
-        fmt_option_str(tag),
-        "If the crate was compiled from within a git-repository, \
-        `GIT_VERSION` contains HEAD's tag. The short commit id is used if HEAD is not tagged."
-    );
-    write_variable!(
-        w,
-        "GIT_DIRTY",
-        "Option<bool>",
-        match dirty {
-            Some(true) => "Some(true)",
-            Some(false) => "Some(false)",
-            None => "None",
-        },
-        "If the repository had dirty/staged files."
-    );
-
     let (branch, commit, commit_short) = match get_repo_head(manifest_location) {
         Ok(Some((b, c, cs))) => (b, Some(c), Some(cs)),
         _ => (None, None, None),
     };
 
-    let doc = "If the crate was compiled from within a git-repository, `GIT_HEAD_REF` \
-        contains full name to the reference pointed to by HEAD \
-        (e.g.: `refs/heads/master`). If HEAD is detached or the branch name is not \
-        valid UTF-8 `None` will be stored.\n";
-    write_variable!(
+    crate::git_shared::write_variables(
         w,
-        "GIT_HEAD_REF",
-        "Option<&str>",
-        fmt_option_str(branch),
-        doc
-    );
-
-    write_variable!(
-        w,
-        "GIT_COMMIT_HASH",
-        "Option<&str>",
-        fmt_option_str(commit),
-        "If the crate was compiled from within a git-repository, `GIT_COMMIT_HASH` \
-    contains HEAD's full commit SHA-1 hash."
-    );
-
-    write_variable!(
-        w,
-        "GIT_COMMIT_HASH_SHORT",
-        "Option<&str>",
-        fmt_option_str(commit_short),
-        "If the crate was compiled from within a git-repository, `GIT_COMMIT_HASH_SHORT` \
-    contains HEAD's short commit SHA-1 hash."
-    );
-
+        RepoInfo {
+            branch,
+            tag,
+            dirty,
+            commit_id: commit,
+            commit_id_short: commit_short,
+        },
+    )?;
     Ok(())
 }
 

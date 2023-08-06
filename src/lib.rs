@@ -217,6 +217,9 @@ mod git;
 #[allow(dead_code, unused_imports, unused_variables)]
 mod gix;
 
+#[cfg(any(feature = "git2", feature = "gitoxide"))]
+mod git_shared;
+
 #[cfg(feature = "chrono")]
 mod krono;
 pub mod util;
