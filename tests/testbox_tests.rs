@@ -75,7 +75,7 @@ fn main() {
 
     fn create_and_run(self) {
         let root = self.create().expect("Creating the project failed");
-        Self::run(root.as_ref())
+        Self::run(root.as_ref());
     }
 
     fn run(root: &std::path::Path) {
@@ -84,12 +84,11 @@ fn main() {
             .arg("run")
             .output()
             .expect("cargo failed");
-        if !cargo_result.status.success() {
-            panic!(
-                "cargo failed with {}",
-                String::from_utf8_lossy(&cargo_result.stderr)
-            );
-        }
+        assert!(
+            cargo_result.status.success(),
+            "cargo failed with {}",
+            String::from_utf8_lossy(&cargo_result.stderr)
+        );
     }
 
     #[cfg(feature = "git2")]
@@ -123,7 +122,102 @@ fn get_built_root() -> path::PathBuf {
 }
 
 #[test]
-fn new_testbox() {
+fn minimal_testbox() {
+    let mut p = Project::new();
+
+    let built_root = get_built_root();
+
+    p.add_file(
+        "Cargo.toml",
+        format!(
+            r#"
+[package]
+name = "minimal_testbox"
+version = "1.2.3-rc1"
+authors = ["Joe", "Bob"]
+build = "build.rs"
+description = "xobtset"
+homepage = "localhost"
+repository = "https://dev.example.com/sources/testbox/"
+license = "MIT"
+
+[dependencies]
+built = {{ path = {:?}, default_features=false }}
+
+[build-dependencies]
+built = {{ path = {:?}, default_features=false }}
+
+[features]
+default = ["SuperAwesome", "MegaAwesome"]
+SuperAwesome = []
+MegaAwesome = []"#,
+            &built_root, &built_root
+        ),
+    );
+
+    p.add_file(
+        "build.rs",
+        r#"
+
+fn main() {
+    built::write_built_file().unwrap();
+}"#,
+    );
+
+    p.add_file(
+        "src/main.rs",
+        r#"
+//! The minimal testbox.
+
+mod built_info {
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
+
+fn main() {
+    assert_eq!(built_info::PKG_VERSION, "1.2.3-rc1");
+    assert_eq!(built_info::PKG_VERSION_MAJOR, "1");
+    assert_eq!(built_info::PKG_VERSION_MINOR, "2");
+    assert_eq!(built_info::PKG_VERSION_PATCH, "3");
+    assert_eq!(built_info::PKG_VERSION_PRE, "rc1");
+    assert_eq!(built_info::PKG_AUTHORS, "Joe:Bob");
+    assert_eq!(built_info::PKG_NAME, "minimal_testbox");
+    assert_eq!(built_info::PKG_DESCRIPTION, "xobtset");
+    assert_eq!(built_info::PKG_HOMEPAGE, "localhost");
+    assert_eq!(built_info::PKG_LICENSE, "MIT");
+    assert_eq!(built_info::PKG_REPOSITORY, "https://dev.example.com/sources/testbox/");
+    assert!(built_info::NUM_JOBS > 0);
+    assert!(built_info::OPT_LEVEL == "0");
+    assert!(built_info::DEBUG);
+    assert_eq!(built_info::PROFILE, "debug");
+    assert_eq!(built_info::FEATURES,
+               ["DEFAULT", "MEGAAWESOME", "SUPERAWESOME"]);
+    assert_eq!(built_info::FEATURES_STR,
+               "DEFAULT, MEGAAWESOME, SUPERAWESOME");
+    assert_eq!(built_info::FEATURES_LOWERCASE,
+               ["default", "megaawesome", "superawesome"]);
+    assert_eq!(built_info::FEATURES_LOWERCASE_STR,
+               "default, megaawesome, superawesome");
+    assert_ne!(built_info::RUSTC_VERSION, "");
+    assert_ne!(built_info::RUSTDOC_VERSION, "");
+    assert_ne!(built_info::HOST, "");
+    assert_ne!(built_info::TARGET, "");
+    assert_ne!(built_info::RUSTC, "");
+    assert_ne!(built_info::RUSTDOC, "");
+    assert_ne!(built_info::CFG_TARGET_ARCH, "");
+    assert_ne!(built_info::CFG_ENDIAN, "");
+    assert_ne!(built_info::CFG_FAMILY, "");
+    assert_ne!(built_info::CFG_OS, "");
+    assert_ne!(built_info::CFG_POINTER_WIDTH, "");
+    // For CFG_ENV, empty string is a possible value.
+    let _: &'static str = built_info::CFG_ENV;
+}"#,
+    );
+
+    p.create_and_run();
+}
+
+#[test]
+fn full_testbox() {
     let mut p = Project::new();
 
     let built_root = get_built_root();
@@ -143,10 +237,10 @@ repository = \"https://dev.example.com/sources/testbox/\"
 license = \"MIT\"
 
 [dependencies]
-built = {{ path = {:?}, features=[\"git2\", \"chrono\", \"semver\"] }}
+built = {{ path = {:?}, features=[\"cargo-lock\", \"git2\", \"chrono\", \"semver\"] }}
 
 [build-dependencies]
-built = {{ path = {:?}, features=[\"git2\", \"chrono\", \"semver\"] }}
+built = {{ path = {:?}, features=[\"cargo-lock\", \"git2\", \"chrono\", \"semver\"] }}
 
 [features]
 default = [\"SuperAwesome\", \"MegaAwesome\"]
@@ -210,6 +304,10 @@ fn main() {
                ["DEFAULT", "MEGAAWESOME", "SUPERAWESOME"]);
     assert_eq!(built_info::FEATURES_STR,
                "DEFAULT, MEGAAWESOME, SUPERAWESOME");
+    assert_eq!(built_info::FEATURES_LOWERCASE,
+               ["default", "megaawesome", "superawesome"]);
+    assert_eq!(built_info::FEATURES_LOWERCASE_STR,
+               "default, megaawesome, superawesome");
     assert_ne!(built_info::RUSTC_VERSION, "");
     assert_ne!(built_info::RUSTDOC_VERSION, "");
     assert_ne!(built_info::DEPENDENCIES_STR, "");
