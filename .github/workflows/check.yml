@@ -87,6 +87,11 @@ jobs:
         with:
           command: clippy
           args: --all-features --all --tests -- -D warnings
+      - name: Clippy with all features (gitoxide only)
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --features=gix --all --tests -- -D warnings
       - name: Clippy example_project
         uses: actions-rs/cargo@v1
         with:

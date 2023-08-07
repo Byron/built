@@ -10,9 +10,6 @@ readme = "README.md"
 keywords = ["cargo", "build"]
 edition = "2021"
 
-[features]
-gitoxide = ["gix", "git2"]
-
 [dependencies]
 cargo-lock = { version = "9.0", optional = true, default-features = false }
 semver = { version = "1.0", optional = true }

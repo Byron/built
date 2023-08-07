@@ -213,11 +213,10 @@ mod dependencies;
 mod environment;
 #[cfg(feature = "git2")]
 mod git;
-#[cfg(feature = "gitoxide")]
-#[allow(dead_code, unused_imports, unused_variables)]
+#[cfg(feature = "gix")]
 mod gix;
 
-#[cfg(any(feature = "git2", feature = "gitoxide"))]
+#[cfg(any(feature = "git2", feature = "gix"))]
 mod git_shared;
 
 #[cfg(feature = "chrono")]
@@ -346,7 +345,7 @@ impl Options {
     /// result. `GIT_VERSION` and `GIT_DIRTY` will therefor always be `None` if
     /// a CI-platform is detected.
     ///
-    #[cfg(any(feature = "git2", feature = "gitoxide"))]
+    #[cfg(any(feature = "git2", feature = "gix"))]
     pub fn set_git(&mut self, enabled: bool) -> &mut Self {
         self.git = enabled;
         self
@@ -509,7 +508,8 @@ impl Options {
 /// `OUR_DIR`.
 pub fn write_built_file_with_opts(
     options: &Options,
-    #[cfg(any(feature = "cargo-lock", feature = "git2"))] manifest_location: &path::Path,
+    #[cfg(any(feature = "cargo-lock", feature = "git2", feature = "gix"))]
+    manifest_location: &path::Path,
     dst: &path::Path,
 ) -> io::Result<()> {
     let mut built_file = fs::File::create(dst)?;
@@ -539,7 +539,7 @@ pub fn write_built_file_with_opts(
         {
             o!(git, git::write_git_version(manifest_location, &built_file)?);
         }
-        #[cfg(feature = "gitoxide")]
+        #[cfg(feature = "gix")]
         {
             o!(
                 git,
@@ -578,7 +578,7 @@ pub fn write_built_file() -> io::Result<()> {
     let dst = path::Path::new(&env::var("OUT_DIR").unwrap()).join("built.rs");
     write_built_file_with_opts(
         &Options::default(),
-        #[cfg(any(feature = "cargo-lock", feature = "git2"))]
+        #[cfg(any(feature = "cargo-lock", feature = "git2", feature = "gix"))]
         env::var("CARGO_MANIFEST_DIR").unwrap().as_ref(),
         &dst,
     )?;

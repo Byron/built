@@ -1,6 +1,5 @@
 use crate::git_shared::RepoInfo;
-use crate::{fmt_option_str, write_variable};
-use std::{fs, io, io::Write, path};
+use std::{fs, io, path};
 
 fn get_repo_info(manifest_location: &path::Path) -> Option<RepoInfo> {
     let repo = gix::discover(manifest_location).ok()?;
@@ -25,20 +24,9 @@ fn get_repo_info(manifest_location: &path::Path) -> Option<RepoInfo> {
     Some(repo_info)
 }
 
-// TODO: replace git2 with gitoxide once this functionality becomes available in git-repository.
-fn is_dirty(manifest_location: &path::Path) -> Option<bool> {
-    let mut options = git2::StatusOptions::new();
-    options.include_ignored(false);
-    options.include_untracked(false);
-
-    let dirty = git2::Repository::discover(manifest_location)
-        .ok()?
-        .statuses(Some(&mut options))
-        .ok()?
-        .iter()
-        .any(|status| !matches!(status.status(), git2::Status::CURRENT));
-
-    Some(dirty)
+// TODO: implement this with `gix`
+fn is_dirty(_manifest_location: &path::Path) -> Option<bool> {
+    None
 }
 
 pub(crate) fn write_git_version(
@@ -52,7 +40,9 @@ pub(crate) fn write_git_version(
 // NOTE: Copy-pasted test from `git2` with adaptation to `gix`
 
 #[cfg(test)]
+#[cfg(feature = "git2")]
 mod tests {
+    // TODO: unify tests
     #[test]
     fn parse_git_repo() {
         use std::fs;
@@ -109,7 +99,7 @@ mod tests {
         // The commit, the commit-id is something and the repo is not dirty
         let repo_info = super::get_repo_info(&project_root).unwrap();
         assert!(!repo_info.tag.unwrap().is_empty());
-        assert_eq!(repo_info.dirty, Some(false));
+        assert_eq!(repo_info.dirty, None, "Needs implementation");
 
         // Tag the commit, it should be retrieved
         repo.tag(
@@ -125,13 +115,13 @@ mod tests {
 
         let repo_info = super::get_repo_info(&project_root).unwrap();
         assert_eq!(repo_info.tag, Some(String::from("foobar")));
-        assert_eq!(repo_info.dirty, Some(false));
+        assert_eq!(repo_info.dirty, None, "needs implementation");
 
         // Make some dirt
         std::fs::write(cruft_file, "now dirty").unwrap();
         let repo_info = super::get_repo_info(&project_root).unwrap();
         assert_eq!(repo_info.tag, Some(String::from("foobar")));
-        assert_eq!(repo_info.dirty, Some(true));
+        assert_eq!(repo_info.dirty, None, "needs implementation");
 
         let branch_short_name = "baz";
         let branch_name = "refs/heads/baz";
