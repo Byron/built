@@ -77,11 +77,21 @@ jobs:
         with:
           command: clippy
           args: --all --tests -- -D warnings
-      - name: Clippy with all features
+      - name: Clippy with all features (git2)
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --features=chrono,git2,semver --all --tests -- -D warnings
+      - name: Clippy with all features (gitoxide)
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: --all-features --all --tests -- -D warnings
+      - name: Clippy with all features (gitoxide only)
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --features=gix --all --tests -- -D warnings
       - name: Clippy example_project
         uses: actions-rs/cargo@v1
         with:
@@ -105,7 +115,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-      - name: Test with all features
+      - name: Test with all features (git2)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features=chrono,git2,semver
+      - name: Test with all features (gitoxide)
         uses: actions-rs/cargo@v1
         with:
           command: test
