@@ -131,13 +131,13 @@
 //!
 //! Override-variables are prefixed by `BUILT_OVERRIDE_{PKG_NAME}_`, where `{PKG_NAME}` is the name
 //! of the package as reported by `cargo`. For example, if the package is named "mypkg", and the value
-//! to be overridden is named "CI_PLATFORM", then the override variable is named
+//! to be overridden is named "CI_PLATFORM", then the override-variable is named
 //! "BUILT_OVERRIDE_mypkg_CI_PLATFORM". Remember that more than one package in a dependency-graph
 //! might use `built` internally, so you might have to override multiple instances of the same
 //! value. If the original `{PKG_NAME}` contain hyphens `-`, they will be substituted by underscores `_`.
-//! For example, if the package name is `great-pkg`, the corresponding override variable prefix should be
-//! "BUILT_OVERRIDE_great_pkg_".
-//! Unused override variables result in a warning at compile time, albeit cargo only reports those
+//! For example, if the package name is `great-pkg`, the corresponding override-variable is named
+//! "BUILT_OVERRIDE_great_pkg_...".
+//! Unused override-variables result in a warning at compile time, albeit cargo only reports those
 //! for path-specific (e.g. local) packages.
 //!
 //! An override-variable's text-presentation must parse to the value's respective type:
