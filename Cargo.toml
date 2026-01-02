@@ -16,13 +16,14 @@ cargo-lock = { version = "10.0", optional = true, default-features = false }
 semver = { version = "1.0", optional = true }
 chrono = { version = "0.4", optional = true, default-features = false, features = ["clock"] }
 git2 = { version = "0.20", optional = true, default-features = false, features = [] }
+gix = { version = "0.77", optional = true, default-features = false, features = ["revision", "status", "max-performance-safe"] }
 
 [dev-dependencies]
 tempfile = "3"
 rustversion = "1.0"
 
 [features]
-dependency-tree = [ "cargo-lock/dependency-tree" ]
+dependency-tree = ["cargo-lock/dependency-tree"]
 
 [package.metadata.docs.rs]
-features = [ "cargo-lock", "chrono", "dependency-tree", "git2", "semver" ]
+features = ["cargo-lock", "chrono", "dependency-tree", "git2", "gix", "semver"]
