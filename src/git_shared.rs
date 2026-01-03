@@ -46,7 +46,7 @@ pub(crate) fn write_git_version(
     } = RepoInfo::from_overrides(envmap);
 
     if branch.is_none() || commit_id.is_none() || commit_id_short.is_none() {
-        if let Some((git_branch, git_commit_id, git_commit_short_id)) =
+        if let Ok(Some((git_branch, git_commit_id, git_commit_short_id))) =
             get_repo_head(manifest_location)
         {
             branch = branch.or(git_branch);
@@ -58,7 +58,7 @@ pub(crate) fn write_git_version(
     // This is an expensive call, avoid it if it's all overridden.
     // TODO(performance): could be split into dirty + describe, and re-use the opened Repository.
     if tag.is_none() || dirty.is_none() {
-        if let Some((git_tag, git_dirty)) = get_repo_description(manifest_location) {
+        if let Ok(Some((git_tag, git_dirty))) = get_repo_description(manifest_location) {
             tag = tag.or(Some(git_tag));
             dirty = dirty.or(Some(git_dirty));
         }
@@ -163,7 +163,7 @@ mod tests {
         use std::path;
 
         let repo_root = tempfile::tempdir().unwrap();
-        assert_eq!(get_repo_description(repo_root.as_ref()), None);
+        assert_eq!(get_repo_description(repo_root.as_ref()), Ok(None));
 
         let repo = git2::Repository::init_opts(
             &repo_root,
@@ -211,7 +211,7 @@ mod tests {
         assert!(commit_hash.starts_with(&commit_hash_short));
 
         // The commit, the commit-id is something and the repo is not dirty
-        let (tag, dirty) = get_repo_description(&project_root).unwrap();
+        let (tag, dirty) = get_repo_description(&project_root).unwrap().unwrap();
         assert!(!tag.is_empty());
         assert!(!dirty);
 
@@ -227,13 +227,13 @@ mod tests {
         )
         .unwrap();
 
-        let (tag, dirty) = get_repo_description(&project_root).unwrap();
+        let (tag, dirty) = get_repo_description(&project_root).unwrap().unwrap();
         assert_eq!(tag, "foobar");
         assert!(!dirty);
 
         // Make some dirt
         std::fs::write(cruft_file, "now dirty").unwrap();
-        let (tag, dirty) = get_repo_description(&project_root).unwrap();
+        let (tag, dirty) = get_repo_description(&project_root).unwrap().unwrap();
         assert_eq!(tag, "foobar");
         assert!(dirty);
 
@@ -245,7 +245,11 @@ mod tests {
 
         assert_eq!(
             get_repo_head(&project_root),
-            Some((Some(branch_name.to_owned()), commit_hash, commit_hash_short))
+            Ok(Some((
+                Some(branch_name.to_owned()),
+                commit_hash,
+                commit_hash_short
+            )))
         );
     }
 
@@ -292,7 +296,7 @@ mod tests {
         repo.set_head_detached(commit_oid).unwrap();
         assert_eq!(
             get_repo_head(repo_root.as_ref()),
-            Some((None, commit_hash, commit_hash_short))
+            Ok(Some((None, commit_hash, commit_hash_short)))
         );
     }
 }
